@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Clicker</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            user-select: none;
+        }
+        
+        #cookie-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 20px 0;
+            z-index: 2;
+        }
+        
+        #cookie {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            transition: transform 0.1s;
+            filter: drop-shadow(3px 3px 5px rgba(0,0,0,0.2));
+        }
+        
+        #cookie:hover {
+            filter: drop-shadow(4px 4px 6px rgba(0,0,0,0.3));
+        }
+        
+        #cookie:active {
+            transform: scale(0.95);
+            filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.2));
+        }
+        
+        .upgrade {
+            margin: 10px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .upgrade:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        #stats {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        #powerups {
+            margin-top: 20px;
+        }
+        
+        .powerup {
+            background-color: #9C27B0 !important;
+        }
+        
+        #achievements {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .achievement {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            background: #4CAF50;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            color: white;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+        }
+        
+        .achievement.unlocked {
+            opacity: 1;
+            transform: scale(1);
+            animation: achievementUnlock 0.5s ease-out;
+        }
+        
+        .achievement-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            animation: slideIn 0.5s ease-out;
+            z-index: 1000;
+        }
+        
+        .achievement-notification.fade-out {
+            animation: slideOut 0.5s ease-in forwards;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        
+        @keyframes achievementUnlock {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .cookie-popup {
+            position: absolute;
+            pointer-events: none;
+            animation: popupFloat 1s ease-out forwards;
+            font-weight: bold;
+            color: #4CAF50;
+            z-index: 3;
+        }
+        
+        .mini-cookie {
+            position: absolute;
+            pointer-events: none;
+            width: 20px;
+            height: 20px;
+            z-index: 3;
+        }
+        
+        @keyframes popupFloat {
+            0% { 
+                transform: translateY(0) scale(1); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translateY(-50px) scale(1.5); 
+                opacity: 0; 
+            }
+        }
+        
+        @keyframes floatAway {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--moveX), var(--moveY)) rotate(var(--rotation));
+                opacity: 0;
+            }
+        }
+        
+        #upgrades, #powerups {
+            user-select: none;
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cookie Clicker</h1>
+    <div id="stats">
+        <p>Cookies: <span id="cookie-count">0</span></p>
+        <p>Cookies per second: <span id="cps">0</span></p>
+        <p>Multiplier: x<span id="multiplier">1</span></p>
+    </div>
+    <div id="cookie-container">
+        <svg id="cookie" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <!-- Cookie base -->
+            <circle cx="50" cy="50" r="45" fill="#C87D32"/>
+            <!-- Cookie texture -->
+            <circle cx="35" cy="40" r="8" fill="#8B4513"/>
+            <circle cx="65" cy="35" r="7" fill="#8B4513"/>
+            <circle cx="45" cy="65" r="7" fill="#8B4513"/>
+            <circle cx="65" cy="60" r="6" fill="#8B4513"/>
+            <circle cx="30" cy="60" r="6" fill="#8B4513"/>
+            <circle cx="50" cy="45" r="5" fill="#8B4513"/>
+            <!-- Lighter overlay for depth -->
+            <circle cx="40" cy="40" r="30" fill="#D4A76A" opacity="0.3"/>
+        </svg>
+    </div>
+    <div id="upgrades">
+        <button class="upgrade" id="cursor" onclick="buyUpgrade('cursor')">
+            Buy Cursor (Cost: 10 cookies) - You have: <span id="cursor-count">0</span>
+        </button>
+        <button class="upgrade" id="grandma" onclick="buyUpgrade('grandma')">
+            Buy Grandma (Cost: 50 cookies) - You have: <span id="grandma-count">0</span>
+        </button>
+        <button class="upgrade" id="farm" onclick="buyUpgrade('farm')">
+            Buy Farm (Cost: 500 cookies) - You have: <span id="farm-count">0</span>
+        </button>
+        <button class="upgrade" id="factory" onclick="buyUpgrade('factory')">
+            Buy Factory (Cost: 2000 cookies) - You have: <span id="factory-count">0</span>
+        </button>
+    </div>
+    <div id="powerups">
+        <button class="upgrade powerup" id="doubleClick" onclick="buyPowerup('doubleClick')">
+            Double Click Power (Cost: 100 cookies)
+        </button>
+        <button class="upgrade powerup" id="autoBoost" onclick="buyPowerup('autoBoost')">
+            Auto Production Boost (Cost: 500 cookies)
+        </button>
+    </div>
+    <div id="achievements">
+        <h2>Achievements</h2>
+        <div id="achievement-list">
+            <!-- Achievements will be added here when unlocked -->
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
